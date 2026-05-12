@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinetic Character Network — Character Relationship Device Builder</title>
+<style>
+  :root {
+    --blue:   #2C5F8A;
+    --teal:   #4A9EA0;
+    --light:  #EEF4F8;
+    --border: #D0DDE8;
+    --gray:   #555;
+    --lgray:  #999;
+    --white:  #fff;
+    --warn:   #E07B39;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; background: #F4F7FA; color: var(--gray); min-height: 100vh; }
+
+  /* ── Header ── */
+  header { background: var(--blue); color: #fff; padding: 18px 32px; display: flex; align-items: center; gap: 14px; }
+  header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: .02em; }
+  header span { font-size: .85rem; opacity: .7; }
+
+  /* ── Steps bar ── */
+  .steps { display: flex; background: var(--white); border-bottom: 1px solid var(--border); padding: 0 32px; }
+  .step-item { padding: 14px 22px; font-size: .88rem; color: var(--lgray); border-bottom: 3px solid transparent; cursor: pointer; transition: .2s; white-space: nowrap; }
+  .step-item.active { color: var(--blue); border-color: var(--blue); font-weight: 600; }
+  .step-item.done   { color: var(--teal); }
+
+  /* ── Main ── */
+  .main { max-width: 900px; margin: 32px auto; padding: 0 20px 60px; }
+  .card { background: var(--white); border-radius: 12px; border: 1px solid var(--border); padding: 28px 32px; margin-bottom: 20px; }
+  .card-title { font-size: 1.05rem; font-weight: 700; color: var(--blue); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--light); }
+
+  /* ── Forms ── */
+  .form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; align-items: flex-end; }
+  label { display: block; font-size: .82rem; color: var(--lgray); margin-bottom: 4px; }
+  input[type=text], select { border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; font-size: .95rem; outline: none; transition: .2s; width: 100%; background: #fff; font-family: inherit; }
+  input[type=text]:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(74,158,160,.15); }
+  .range-wrap { display: flex; align-items: center; gap: 8px; }
+  input[type=range] { width: 110px; accent-color: var(--teal); }
+  .range-val { min-width: 20px; font-weight: 700; color: var(--teal); font-size: .95rem; }
+
+  /* ── Buttons ── */
+  .btn { padding: 9px 22px; border-radius: 8px; border: none; cursor: pointer; font-size: .92rem; font-weight: 600; transition: .18s; font-family: inherit; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #1f4a6e; }
+  .btn-teal { background: var(--teal); color: #fff; }
+  .btn-teal:hover { background: #378a8c; }
+  .btn-ghost { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); }
+  .btn-ghost:hover { background: var(--light); }
+  .btn-danger { background: #dc3545; color: #fff; font-size: .8rem; padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer; font-family: inherit; }
+  .btn-danger:hover { background: #b02a37; }
+  .btn-sm { padding: 6px 14px; font-size: .82rem; }
+
+  /* ── Character list ── */
+  .char-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .char-card { display: flex; align-items: center; gap: 14px; background: var(--light); border-radius: 9px; padding: 12px 16px; }
+  .char-shape { width: 36px; height: 36px; flex-shrink: 0; }
+  .char-info { flex: 1; }
+  .char-name { font-weight: 700; font-size: .98rem; color: var(--blue); }
+  .char-meta { font-size: .8rem; color: var(--lgray); margin-top: 2px; }
+
+  /* ── Personality type select with shape preview ── */
+  .personality-row { display: flex; align-items: center; gap: 10px; }
+  .shape-preview { width: 32px; height: 32px; flex-shrink: 0; }
+
+  /* ── Relationship list ── */
+  .rel-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .rel-row { display: flex; align-items: center; gap: 14px; background: var(--light); border-radius: 8px; padding: 10px 14px; flex-wrap: wrap; }
+  .rel-pair { font-weight: 600; color: var(--blue); min-width: 160px; font-size: .93rem; }
+  .rel-direct { display: flex; align-items: center; gap: 6px; font-size: .85rem; cursor: pointer; }
+  .rel-direct input { width: 16px; height: 16px; accent-color: var(--teal); }
+
+  /* ── Diagrams ── */
+  .diagram-wrap { overflow: auto; background: var(--light); border-radius: 10px; padding: 16px; text-align: center; }
+  svg { max-width: 100%; }
+
+  /* ── Legend ── */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--lgray); }
+
+  /* ── Assembly list ── */
+  .assembly-item { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .assembly-item:last-child { border: none; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; font-size: .85rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: .92rem; line-height: 1.65; }
+  .step-text strong { color: var(--blue); }
+
+  /* ── Tip box ── */
+  .tip { background: #FFF8F0; border-left: 4px solid var(--warn); border-radius: 6px; padding: 10px 14px; font-size: .88rem; color: #7A4820; margin-top: 12px; }
+
+  /* ── Share bar ── */
+  .share-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .url-box { flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: .82rem; color: var(--lgray); background: var(--light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
+
+  /* ── Badge ── */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+  .badge-teal { background: var(--teal); color: #fff; }
+  .badge-warn { background: var(--warn); color: #fff; }
+
+  /* ── Empty ── */
+  .empty { text-align: center; color: var(--lgray); padding: 32px; font-size: .92rem; }
+
+  /* ── Intro section ── */
+  .intro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 14px; }
+  .intro-card { background: var(--light); border-radius: 10px; padding: 16px; text-align: center; }
+  .intro-card .ic-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .intro-card h3 { font-size: .9rem; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+  .intro-card p { font-size: .8rem; color: var(--lgray); line-height: 1.5; }
+
+  @media print {
+    header, .steps, .form-actions, .share-bar, .btn, .tip { display: none !important; }
+    .card { border: none; box-shadow: none; padding: 0; }
+  }
+  @media (max-width: 600px) {
+    .main { padding: 0 12px 40px; }
+    .card { padding: 20px 16px; }
+    header { padding: 14px 16px; }
+    .steps { padding: 0 8px; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="34" height="34" viewBox="0 0 34 34">
+    <circle cx="17" cy="8"  r="5.5" fill="none" stroke="#fff"     stroke-width="2"/>
+    <circle cx="7"  cy="27" r="4.5" fill="none" stroke="#4A9EA0"  stroke-width="2"/>
+    <circle cx="27" cy="27" r="4.5" fill="none" stroke="#4A9EA0"  stroke-width="2"/>
+    <line x1="17" y1="13.5" x2="7"  y2="22.5" stroke="#fff"    stroke-width="1.5" stroke-dasharray="3,2"/>
+    <line x1="17" y1="13.5" x2="27" y2="22.5" stroke="#fff"    stroke-width="1.5" stroke-dasharray="3,2"/>
+    <line x1="7"  y1="27"   x2="27" y2="27"   stroke="#4A9EA0" stroke-width="1"   stroke-dasharray="3,2"/>
+  </svg>
+  <div>
+    <h1>Kinetic Character Network</h1>
+    <span>Build your character relationship device for any book</span>
+  </div>
+</header>
+
+<div class="steps">
+  <div class="step-item active" id="tab0" onclick="goStep(0)">① Book &amp; Characters</div>
+  <div class="step-item"        id="tab1" onclick="goStep(1)">② Relationships</div>
+  <div class="step-item"        id="tab2" onclick="goStep(2)">③ Generate Design</div>
+</div>
+
+<div class="main">
+
+<!-- ════ STEP 0: Book + Characters ════ -->
+<div id="step0">
+
+  <div class="card">
+    <div class="card-title">How it works</div>
+    <div class="intro-grid">
+      <div class="intro-card"><div class="ic-icon">📖</div><h3>Any book</h3><p>Works for any novel, play, or story — just enter the characters</p></div>
+      <div class="intro-card"><div class="ic-icon">🔷</div><h3>Shape = personality</h3><p>Each character's traits map to a 3D-printed geometric form</p></div>
+      <div class="intro-card"><div class="ic-icon">〰️</div><h3>String length = closeness</h3><p>Closer relationships get shorter strings — motion transfers faster</p></div>
+      <div class="intro-card"><div class="ic-icon">🌀</div><h3>Touch one, all move</h3><p>The physics of the mobile visualises how characters influence each other</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📖 Book title</div>
+    <div class="form-row">
+      <div style="flex:2; min-width:220px">
+        <label>Title</label>
+        <input type="text" id="bookTitle" placeholder="e.g. The Little Prince, 1984, Pride and Prejudice…" oninput="save()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👤 Add characters</div>
+    <div class="form-row">
+      <div style="flex:2; min-width:150px">
+        <label>Character name</label>
+        <input type="text" id="newName" placeholder="e.g. The Little Prince">
+      </div>
+      <div style="flex:2; min-width:180px">
+        <label>Personality type → shape</label>
+        <div class="personality-row">
+          <svg class="shape-preview" id="shapePreview" viewBox="0 0 32 32"></svg>
+          <select id="newPersonality" onchange="updateShapePreview()" style="flex:1">
+            <option value="gentle">Gentle — Sphere</option>
+            <option value="assertive">Assertive — Cube</option>
+            <option value="complex">Complex — Polyhedron</option>
+            <option value="mysterious">Mysterious — Irregular</option>
+            <option value="idealistic">Idealistic — Tetrahedron</option>
+            <option value="authoritative">Authoritative — Inverted cone</option>
+            <option value="understated">Understated — Ellipsoid</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Story importance</label>
+        <div class="range-wrap">
+          <input type="range" id="newImportance" min="1" max="5" value="3"
+                 oninput="this.nextElementSibling.textContent=this.value">
+          <span class="range-val">3</span>
+        </div>
+      </div>
+      <div>
+        <label>Emotional weight</label>
+        <div class="range-wrap">
+          <input type="range" id="newEmotion" min="1" max="5" value="3"
+                 oninput="this.nextElementSibling.textContent=this.value">
+          <span class="range-val">3</span>
+        </div>
+      </div>
+      <div style="padding-bottom:2px">
+        <label>&nbsp;</label>
+        <button class="btn btn-teal" onclick="addChar()">＋ Add</button>
+      </div>
+    </div>
+
+    <div class="tip">
+      <strong>Personality → Shape guide:</strong>
+      Gentle = Sphere &nbsp;|&nbsp; Assertive = Cube &nbsp;|&nbsp; Complex = Polyhedron &nbsp;|&nbsp;
+      Mysterious = Irregular &nbsp;|&nbsp; Idealistic = Tetrahedron &nbsp;|&nbsp;
+      Authoritative = Inverted cone &nbsp;|&nbsp; Understated = Ellipsoid
+    </div>
+
+    <div class="char-list" id="charList"></div>
+  </div>
+
+  <div class="form-actions" style="display:flex; justify-content:flex-end">
+    <button class="btn btn-primary" onclick="goStep(1)">Next: Set relationships →</button>
+  </div>
+</div>
+
+<!-- ════ STEP 1: Relationships ════ -->
+<div id="step1" style="display:none">
+  <div class="card">
+    <div class="card-title">🔗 Character relationships</div>
+    <p style="font-size:.88rem; color:var(--lgray); margin-bottom:14px">
+      Set the closeness and connection type for every character pair.
+      <strong>Closeness determines string length</strong>; direct connection determines whether a physical line is used.
+    </p>
+
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px; font-size:.82rem; color:var(--lgray)">
+      <div>Closeness 5 → <strong style="color:var(--teal)">10 cm</strong></div>
+      <div>Closeness 4 → <strong style="color:var(--teal)">18 cm</strong></div>
+      <div>Closeness 3 → <strong style="color:var(--teal)">26 cm</strong></div>
+      <div>Closeness 2 → <strong style="color:var(--teal)">35 cm</strong></div>
+      <div>Closeness 1 → <strong style="color:var(--teal)">45 cm</strong> (or skip)</div>
+    </div>
+
+    <div class="rel-list" id="relList"></div>
+    <div class="empty" id="relEmpty" style="display:none">Please add at least two characters in the previous step.</div>
+  </div>
+
+  <div class="form-actions" style="display:flex; justify-content:space-between; gap:10px">
+    <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(2)">Generate design →</button>
+  </div>
+</div>
+
+<!-- ════ STEP 2: Results ════ -->
+<div id="step2" style="display:none">
+
+  <div class="card">
+    <div class="card-title">🗺️ Top-down placement diagram</div>
+    <div class="diagram-wrap" id="topDownDiagram"></div>
+    <div class="legend" id="shapeLegend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Step-by-step assembly guide</div>
+    <div id="assemblyGuide"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📐 String length reference table</div>
+    <div id="stringTable"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔗 Share &amp; save</div>
+    <p style="font-size:.88rem; color:var(--lgray); margin-bottom:10px">
+      Copy this link — anyone who opens it will see the same design. Paste it behind a QR code on your display card.
+    </p>
+    <div class="share-bar">
+      <div class="url-box" id="shareUrl"></div>
+      <button class="btn btn-teal btn-sm" onclick="copyUrl()">Copy link</button>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print guide</button>
+    </div>
+  </div>
+
+  <div class="form-actions" style="display:flex; justify-content:flex-start">
+    <button class="btn btn-ghost" onclick="goStep(1)">← Edit relationships</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+let state = { bookTitle:'', chars:[], rels:{} };
+let nextId = 1;
+
+// ════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════
+const SHAPES = {
+  gentle:        { label:'Sphere',         draw: drawCircle },
+  assertive:     { label:'Cube',           draw: drawSquare },
+  complex:       { label:'Polyhedron',     draw: drawHexagon },
+  mysterious:    { label:'Irregular',      draw: drawIrreg },
+  idealistic:    { label:'Tetrahedron',    draw: drawTriangle },
+  authoritative: { label:'Inverted cone',  draw: drawInvTriangle },
+  understated:   { label:'Ellipsoid',      draw: drawEllipse },
+};
+const SIZE_LABEL = {1:'S',2:'S',3:'M',4:'L',5:'L'};
+const SIZE_R     = {1:18,2:20,3:26,4:32,5:38};
+const STR_LEN    = {1:45,2:35,3:26,4:18,5:10};
+const COLORS = ['#2C5F8A','#4A9EA0','#E07B39','#7B61A8','#C0392B','#27AE60','#2980B9','#8E44AD'];
+
+// ════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════
+function goStep(n){
+  [0,1,2].forEach(i=>{
+    document.getElementById('step'+i).style.display = i===n?'':'none';
+    document.getElementById('tab'+i).className = 'step-item'+(i===n?' active':i<n?' done':'');
+  });
+  if(n===1) renderRelList();
+  if(n===2) generateResults();
+}
+
+// ════════════════════════════════════════════════
+//  CHARACTERS
+// ════════════════════════════════════════════════
+function addChar(){
+  const name = document.getElementById('newName').value.trim();
+  if(!name){ alert('Please enter a character name.'); return; }
+  state.chars.push({
+    id: nextId++,
+    name,
+    personality: document.getElementById('newPersonality').value,
+    importance:  +document.getElementById('newImportance').value,
+    emotion:     +document.getElementById('newEmotion').value,
+  });
+  document.getElementById('newName').value='';
+  save(); renderCharList();
+}
+
+function deleteChar(id){
+  state.chars = state.chars.filter(c=>c.id!==id);
+  Object.keys(state.rels).forEach(k=>{
+    const[a,b]=k.split('_').map(Number);
+    if(a===id||b===id) delete state.rels[k];
+  });
+  save(); renderCharList();
+}
+
+function renderCharList(){
+  const el = document.getElementById('charList');
+  if(!state.chars.length){
+    el.innerHTML='<div class="empty">No characters yet — add one above.</div>';
+    return;
+  }
+  el.innerHTML = state.chars.map(c=>`
+    <div class="char-card">
+      <svg class="char-shape" viewBox="0 0 36 36">
+        ${SHAPES[c.personality].draw(18,18,14,'#2C5F8A','#EEF4F8')}
+      </svg>
+      <div class="char-info">
+        <div class="char-name">${esc(c.name)}</div>
+        <div class="char-meta">
+          ${cap(c.personality)} · ${SHAPES[c.personality].label} &nbsp;|&nbsp;
+          Importance ${c.importance} → Size ${SIZE_LABEL[c.importance]} &nbsp;|&nbsp;
+          Emotional weight ${c.emotion}
+        </div>
+      </div>
+      <button class="btn-danger" onclick="deleteChar(${c.id})">Remove</button>
+    </div>`).join('');
+}
+
+function updateShapePreview(){
+  const p = document.getElementById('newPersonality').value;
+  const svg = document.getElementById('shapePreview');
+  svg.innerHTML = SHAPES[p].draw(16,16,12,'#2C5F8A','#EEF4F8');
+}
+
+// ════════════════════════════════════════════════
+//  RELATIONSHIPS
+// ════════════════════════════════════════════════
+function relKey(a,b){ return a<b?a+'_'+b:b+'_'+a; }
+
+function renderRelList(){
+  const el    = document.getElementById('relList');
+  const empty = document.getElementById('relEmpty');
+  const pairs = [];
+  for(let i=0;i<state.chars.length;i++)
+    for(let j=i+1;j<state.chars.length;j++)
+      pairs.push([state.chars[i],state.chars[j]]);
+
+  if(!pairs.length){ el.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  el.innerHTML = pairs.map(([a,b])=>{
+    const k  = relKey(a.id,b.id);
+    const r  = state.rels[k]||{intimacy:3,direct:true};
+    if(!state.rels[k]) state.rels[k]=r;
+    return `
+    <div class="rel-row">
+      <span class="rel-pair">${esc(a.name)} ↔ ${esc(b.name)}</span>
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:220px">
+        <label style="margin:0;white-space:nowrap;font-size:.82rem;color:var(--lgray)">Closeness</label>
+        <div class="range-wrap">
+          <input type="range" min="1" max="5" value="${r.intimacy}"
+            oninput="setRel('${k}','intimacy',+this.value);this.nextElementSibling.textContent=this.value">
+          <span class="range-val">${r.intimacy}</span>
+        </div>
+        <span style="font-size:.78rem;color:var(--lgray)">→ string: <strong id="ll_${k}">${STR_LEN[r.intimacy]}</strong> cm</span>
+      </div>
+      <label class="rel-direct">
+        <input type="checkbox" ${r.direct?'checked':''} onchange="setRel('${k}','direct',this.checked)">
+        Direct connection
+      </label>
+    </div>`;
+  }).join('');
+}
+
+function setRel(k,field,val){
+  if(!state.rels[k]) state.rels[k]={intimacy:3,direct:true};
+  state.rels[k][field]=val;
+  if(field==='intimacy'){
+    const el=document.getElementById('ll_'+k);
+    if(el) el.textContent=STR_LEN[val];
+  }
+  save();
+}
+
+// ════════════════════════════════════════════════
+//  DIAGRAM GENERATION
+// ════════════════════════════════════════════════
+function generateResults(){
+  if(!state.chars.length){
+    document.getElementById('topDownDiagram').innerHTML='<div class="empty">No character data — please go back and add characters.</div>';
+    return;
+  }
+  const positions = calcLayout();
+  renderTopDown(positions);
+  renderAssembly(positions);
+  renderStringTable();
+  renderShareUrl();
+}
+
+function calcLayout(){
+  const chars=state.chars, W=700, H=480, cx=W/2, cy=H/2;
+  const deg={};
+  chars.forEach(c=>deg[c.id]=0);
+  Object.entries(state.rels).forEach(([k,r])=>{
+    if(!r.direct) return;
+    const[a,b]=k.split('_').map(Number);
+    if(deg[a]!==undefined) deg[a]++;
+    if(deg[b]!==undefined) deg[b]++;
+  });
+  const sorted=[...chars].sort((a,b)=>deg[b.id]-deg[a.id]);
+  const pos={};
+  if(sorted.length===1){ pos[sorted[0].id]={x:cx,y:cy}; return pos; }
+  pos[sorted[0].id]={x:cx,y:cy};
+  const rest=sorted.slice(1);
+  const ring1=rest.slice(0,Math.min(6,rest.length));
+  const ring2=rest.slice(6);
+  ring1.forEach((c,i)=>{
+    const a=(2*Math.PI*i/ring1.length)-Math.PI/2;
+    pos[c.id]={x:cx+155*Math.cos(a),y:cy+155*Math.sin(a)};
+  });
+  ring2.forEach((c,i)=>{
+    const a=(2*Math.PI*i/ring2.length)-Math.PI/2+Math.PI/ring2.length;
+    pos[c.id]={x:cx+265*Math.cos(a),y:cy+265*Math.sin(a)};
+  });
+  return pos;
+}
+
+function renderTopDown(pos){
+  const W=700, H=480, chars=state.chars;
+  const colorOf={};
+  chars.forEach((c,i)=>colorOf[c.id]=COLORS[i%COLORS.length]);
+
+  let lines='';
+  Object.entries(state.rels).forEach(([k,r])=>{
+    if(!r.direct) return;
+    const[a,b]=k.split('_').map(Number);
+    if(!pos[a]||!pos[b]) return;
+    const pa=pos[a], pb=pos[b];
+    const mx=(pa.x+pb.x)/2, my=(pa.y+pb.y)/2;
+    const sw=Math.max(1,r.intimacy*1.2);
+    const dash=r.intimacy>=4?'none':'6,4';
+    lines+=`
+      <line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}"
+        stroke="#B0C8DC" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+      <text x="${mx}" y="${my-6}" text-anchor="middle"
+        fill="#4A9EA0" font-size="11" font-family="Segoe UI,sans-serif">${STR_LEN[r.intimacy]} cm</text>`;
+  });
+
+  let nodes='';
+  chars.forEach(c=>{
+    if(!pos[c.id]) return;
+    const{x,y}=pos[c.id], r=SIZE_R[c.importance], color=colorOf[c.id];
+    const shp=SHAPES[c.personality].draw(x,y,r,color,color+'22');
+    nodes+=`<g>
+      ${shp}
+      <text x="${x}" y="${y+r+15}" text-anchor="middle" fill="#333"
+        font-size="12" font-weight="600" font-family="Segoe UI,sans-serif">${esc(c.name)}</text>
+      <text x="${x}" y="${y+r+27}" text-anchor="middle" fill="#999"
+        font-size="10" font-family="Segoe UI,sans-serif">${SHAPES[c.personality].label} · ${SIZE_LABEL[c.importance]}</text>
+    </g>`;
+  });
+
+  document.getElementById('topDownDiagram').innerHTML=
+    `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
+      style="border-radius:8px;background:#F7FAFB">
+      ${lines}${nodes}
+    </svg>`;
+
+  // legend
+  document.getElementById('shapeLegend').innerHTML=
+    chars.map((c,i)=>`
+      <div class="legend-item">
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          ${SHAPES[c.personality].draw(9,9,7,COLORS[i%COLORS.length],COLORS[i%COLORS.length]+'33')}
+        </svg>
+        <span><strong style="color:var(--blue)">${esc(c.name)}</strong> — ${SHAPES[c.personality].label}, ${SIZE_LABEL[c.importance]} size</span>
+      </div>`).join('');
+}
+
+function renderAssembly(pos){
+  const chars=state.chars;
+  const sorted=[...chars].sort((a,b)=>b.importance-a.importance);
+  const steps=[];
+
+  steps.push({
+    title:'Prepare the base',
+    text:'Place the hanging frame on a flat surface. Check that all attachment points are clean and free of obstructions.'
+  });
+
+  if(sorted[0]) steps.push({
+    title:`Hang the central character: <strong>${esc(sorted[0].name)}</strong>`,
+    text:`Select the <strong>${SHAPES[sorted[0].personality].label}</strong> (size ${SIZE_LABEL[sorted[0].importance]}). Thread a string through the top hole and hang it from the highest point of the frame.`
+  });
+
+  const dirPairs=[];
+  Object.entries(state.rels).forEach(([k,r])=>{
+    if(!r.direct) return;
+    const[a,b]=k.split('_').map(Number);
+    const ca=chars.find(c=>c.id===a), cb=chars.find(c=>c.id===b);
+    if(ca&&cb) dirPairs.push({ca,cb,intimacy:r.intimacy,len:STR_LEN[r.intimacy]});
+  });
+  dirPairs.sort((a,b)=>b.intimacy-a.intimacy);
+
+  dirPairs.forEach(({ca,cb,len,intimacy})=>{
+    steps.push({
+      title:`Connect <strong>${esc(ca.name)}</strong> ↔ <strong>${esc(cb.name)}</strong>`,
+      text:`Cut a <strong style="color:var(--teal)">${len} cm</strong> length of string. Tie one end to ${esc(ca.name)}'s hole and the other to ${esc(cb.name)}'s hole. Closeness ${intimacy}/5 — leave ~0.5 cm of slack.`
+    });
+  });
+
+  const indirPairs=[];
+  Object.entries(state.rels).forEach(([k,r])=>{
+    if(r.direct) return;
+    const[a,b]=k.split('_').map(Number);
+    const ca=chars.find(c=>c.id===a), cb=chars.find(c=>c.id===b);
+    if(ca&&cb) indirPairs.push(`${esc(ca.name)} &amp; ${esc(cb.name)}`);
+  });
+  if(indirPairs.length){
+    steps.push({
+      title:'Indirect connections',
+      text:`The following pairs are set to <strong>indirect only</strong> — they affect each other through shared connections, so no direct string is needed: ${indirPairs.join(', ')}.`
+    });
+  }
+
+  steps.push({
+    title:'Hang and balance',
+    text:'Suspend the frame from a fixed point. Gently nudge each shape to check that motion travels through the network. Adjust string lengths slightly if the mobile feels unbalanced.'
+  });
+
+  steps.push({
+    title:'Add your display card &amp; QR code',
+    text:'Print this page (or take a screenshot) to display alongside the device. Copy the share link below, convert it to a QR code, and attach it to the back of your display card — viewers scan to see how you designed it.'
+  });
+
+  document.getElementById('assemblyGuide').innerHTML=
+    steps.map((s,i)=>`
+      <div class="assembly-item">
+        <div class="step-num">${i+1}</div>
+        <div class="step-text"><strong>${s.title}</strong><br>${s.text}</div>
+      </div>`).join('');
+}
+
+function renderStringTable(){
+  const rows=[];
+  Object.entries(state.rels).forEach(([k,r])=>{
+    const[a,b]=k.split('_').map(Number);
+    const ca=state.chars.find(c=>c.id===a), cb=state.chars.find(c=>c.id===b);
+    if(!ca||!cb) return;
+    rows.push({pair:`${ca.name} ↔ ${cb.name}`,intimacy:r.intimacy,len:STR_LEN[r.intimacy],direct:r.direct});
+  });
+  rows.sort((a,b)=>a.len-b.len);
+
+  if(!rows.length){
+    document.getElementById('stringTable').innerHTML='<div class="empty">No connections defined.</div>';
+    return;
+  }
+
+  document.getElementById('stringTable').innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+      <thead><tr style="background:var(--blue);color:#fff">
+        <th style="padding:9px 14px;text-align:left;border-radius:6px 0 0 0">Character pair</th>
+        <th style="padding:9px;text-align:center">Closeness</th>
+        <th style="padding:9px;text-align:center">String length</th>
+        <th style="padding:9px;text-align:center;border-radius:0 6px 0 0">Connection</th>
+      </tr></thead>
+      <tbody>${rows.map((r,i)=>`
+        <tr style="background:${i%2?'#fff':'var(--light)'}">
+          <td style="padding:8px 14px;font-weight:600;color:var(--blue)">${r.pair}</td>
+          <td style="padding:8px;text-align:center">${r.intimacy} / 5</td>
+          <td style="padding:8px;text-align:center;font-weight:700;color:var(--teal)">${r.direct?r.len+' cm':'—'}</td>
+          <td style="padding:8px;text-align:center">
+            <span class="badge ${r.direct?'badge-teal':'badge-warn'}">${r.direct?'Direct':'Indirect'}</span>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ════════════════════════════════════════════════
+//  SHARE / PERSISTENCE
+// ════════════════════════════════════════════════
+function save(){
+  state.bookTitle = document.getElementById('bookTitle').value;
+  try {
+    const enc = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    history.replaceState(null,'','#'+enc);
+  } catch(e){}
+}
+
+function loadFromHash(){
+  const hash=location.hash.slice(1);
+  if(!hash) return;
+  try {
+    const decoded=JSON.parse(decodeURIComponent(escape(atob(hash))));
+    state=decoded;
+    nextId=Math.max(1,...state.chars.map(c=>c.id+1));
+    document.getElementById('bookTitle').value=state.bookTitle||'';
+    renderCharList();
+  } catch(e){}
+}
+
+function renderShareUrl(){
+  document.getElementById('shareUrl').textContent=location.href;
+}
+function copyUrl(){
+  navigator.clipboard.writeText(location.href).then(()=>alert('Link copied!'));
+}
+
+// ════════════════════════════════════════════════
+//  SVG SHAPE DRAWERS
+// ════════════════════════════════════════════════
+function drawCircle(cx,cy,r,s,f){
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${f}" stroke="${s}" stroke-width="2.5"/>`;
+}
+function drawSquare(cx,cy,r,s,f){
+  const h=r*1.5;
+  return `<rect x="${cx-h/2}" y="${cy-h/2}" width="${h}" height="${h}" rx="3" fill="${f}" stroke="${s}" stroke-width="2.5"/>`;
+}
+function drawHexagon(cx,cy,r,s,f){
+  const pts=[...Array(6)].map((_,i)=>{
+    const a=Math.PI/180*(60*i-30);
+    return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;
+  }).join(' ');
+  return `<polygon points="${pts}" fill="${f}" stroke="${s}" stroke-width="2.5"/>`;
+}
+function drawIrreg(cx,cy,r,s,f){
+  const pts=`${cx},${cy-r} ${cx+r*.9},${cy-r*.3} ${cx+r*.6},${cy+r*.8} ${cx-r*.4},${cy+r} ${cx-r*.9},${cy+r*.1} ${cx-r*.5},${cy-r*.7}`;
+  return `<polygon points="${pts}" fill="${f}" stroke="${s}" stroke-width="2.5"/>`;
+}
+function drawTriangle(cx,cy,r,s,f){
+  const h=r*1.6;
+  const pts=`${cx},${cy-h*.7} ${cx+h*.7},${cy+h*.5} ${cx-h*.7},${cy+h*.5}`;
+  return `<polygon points="${pts}" fill="${f}" stroke="${s}" stroke-width="2.5"/>`;
+}
+function drawInvTriangle(cx,cy,r,s,f){
+  const h=r*1.6;
+  const pts=`${cx},${cy+h*.7} ${cx+h*.7},${cy-h*.5} ${cx-h*.7},${cy-h*.5}`;
+  return `<polygon points="${pts}" fill="${f}" stroke="${s}" stroke-width="2.5"/>`;
+}
+function drawEllipse(cx,cy,r,s,f){
+  return `<ellipse cx="${cx}" cy="${cy}" rx="${r*1.3}" ry="${r*.8}" fill="${f}" stroke="${s}" stroke-width="2.5"/>`;
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+updateShapePreview();
+loadFromHash();
+renderCharList();
+</script>
+</body>
+</html>
